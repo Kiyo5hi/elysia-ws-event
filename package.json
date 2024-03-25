@@ -4,7 +4,7 @@
 	"type": "module",
 	"devDependencies": {
 		"@biomejs/biome": "1.6.1",
-		"@elysiajs/eden": "^1.0.5",
+		"@elysiajs/eden": "^1.0.7",
 		"@sinclair/typebox-codegen": "^0.9.8",
 		"@types/bun": "latest"
 	},
