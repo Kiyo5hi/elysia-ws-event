@@ -58,3 +58,10 @@ export class ConnectionClosedError extends ServerError {
 		this.name = "ConnectionClosedError";
 	}
 }
+
+export class UserIdMismatchError extends ServerError {
+	constructor(userId: UserId, from: UserId) {
+		super(`userId mismatch: ${userId} !== ${from}`);
+		this.name = "UserIdMismatchError";
+	}
+}

@@ -8,6 +8,7 @@ import {
 	EventNotFoundError,
 	ServerError,
 	ServerErrorSchema,
+	UserIdMismatchError,
 } from "./errors";
 import type { Connection, RequestBase, ResponseBase, UserId } from "./types";
 import { loggerMiddleware } from "./setup";
@@ -99,7 +100,11 @@ const app = new Elysia().use(loggerMiddleware).ws("/:userId", {
 		connectionLogger.info(`connection closed: ${ws.data.params.userId}`);
 		connectionMap.delete(ws.data.params.userId);
 	},
-	message: async (_ws, msg) => {
+	message: async (ws, msg) => {
+		if (ws.data.params.userId !== msg.from) {
+			throw new UserIdMismatchError(ws.data.params.userId, msg.from);
+		}
+
 		const handler = handlers[msg.event];
 		if (!handler) {
 			throw new EventNotFoundError(msg.event);
