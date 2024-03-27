@@ -1,7 +1,7 @@
 import { Type } from "@sinclair/typebox";
 
 import { eventNames } from "./handlers";
-import { ResponseBase, type Connection, type UserId } from "./types";
+import { ResponseBase, type UserId } from "./types";
 
 export const ServerErrorSchema = ResponseBase(
 	"error",
@@ -35,19 +35,6 @@ export class EventNotFoundError extends ServerError {
 		this.details = {
 			acceptedEvents: eventNames,
 			got: eventName,
-		};
-	}
-}
-
-export class UserConflictError extends ServerError {
-	conn: Connection;
-
-	constructor(userId: UserId, conn: Connection) {
-		super(`user already connected: ${userId}`);
-		this.name = "UserConflictError";
-		this.conn = conn;
-		this.details = {
-			userId,
 		};
 	}
 }

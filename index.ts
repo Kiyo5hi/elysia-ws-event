@@ -10,7 +10,13 @@ import {
 	ServerErrorSchema,
 	UserIdMismatchError,
 } from "./errors";
-import type { Connection, RequestBase, ResponseBase, UserId } from "./types";
+import {
+	ReservedUserId,
+	type Connection,
+	type RequestBase,
+	type ResponseBase,
+	type UserId,
+} from "./types";
 import { loggerMiddleware } from "./setup";
 import { getLogger } from "./loggers";
 
@@ -34,6 +40,8 @@ async function processResponse(
 	request: RequestBase<string, Record<string, unknown>>,
 	responsePromise: MaybePromise<ResponseBase<string, Record<string, unknown>>>,
 ) {
+	// TODO: handle ReservedUserId
+
 	try {
 		const response = await responsePromise;
 		const to = response.to;
@@ -77,10 +85,27 @@ const app = new Elysia().use(loggerMiddleware).ws("/:userId", {
 		userId: Type.String(),
 	}),
 	open: async (ws) => {
+		if (ws.data.params.userId in ReservedUserId) {
+			ws.send({
+				requestId: "0",
+				to: ReservedUserId.UNKNOWN,
+				event: "error",
+				data: {
+					name: "ReservedUserIdError",
+					message: `userId is reserved: ${ws.data.params.userId}`,
+					details: {
+						userId: ws.data.params.userId,
+					},
+				},
+			});
+			ws.close();
+			return;
+		}
+
 		if (connectionMap.has(ws.data.params.userId)) {
 			ws.send({
 				requestId: "0",
-				to: ws.data.params.userId,
+				to: ReservedUserId.UNKNOWN,
 				event: "error",
 				data: {
 					name: "UserConflictError",
@@ -91,10 +116,11 @@ const app = new Elysia().use(loggerMiddleware).ws("/:userId", {
 				},
 			});
 			ws.close();
-		} else {
-			connectionLogger.info(`connection opened: ${ws.data.params.userId}`);
-			connectionMap.set(ws.data.params.userId, ws as Connection);
+			return;
 		}
+
+		connectionLogger.info(`connection opened: ${ws.data.params.userId}`);
+		connectionMap.set(ws.data.params.userId, ws as Connection);
 	},
 	close: async (ws) => {
 		connectionLogger.info(`connection closed: ${ws.data.params.userId}`);

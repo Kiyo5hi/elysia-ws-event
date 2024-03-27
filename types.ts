@@ -76,3 +76,10 @@ export type HandlerEntry<
 
 // biome-ignore lint/suspicious/noExplicitAny: Elysia has complex types
 export type Connection = ElysiaWS<any>;
+
+export enum ReservedUserId {
+	ALL = "all",
+	GROUP = "group",
+	SYSTEM = "system",
+	UNKNOWN = "unknown",
+}
