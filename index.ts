@@ -78,23 +78,23 @@ async function processResponse(
 	}
 }
 
-const app = new Elysia().use(loggerMiddleware).ws("/:userId", {
+const app = new Elysia().use(loggerMiddleware).ws("/", {
 	body: Type.Union(requestSchemas),
 	response: Type.Union([...responseSchemas, ServerErrorSchema]),
-	params: Type.Object({
+	query: Type.Object({
 		userId: Type.String(),
 	}),
 	open: async (ws) => {
-		if (ws.data.params.userId in ReservedUserId) {
+		if (ws.data.query.userId in ReservedUserId) {
 			ws.send({
 				requestId: "0",
 				to: ReservedUserId.UNKNOWN,
 				event: "error",
 				data: {
 					name: "ReservedUserIdError",
-					message: `userId is reserved: ${ws.data.params.userId}`,
+					message: `userId is reserved: ${ws.data.query.userId}`,
 					details: {
-						userId: ws.data.params.userId,
+						userId: ws.data.query.userId,
 					},
 				},
 			});
@@ -102,16 +102,16 @@ const app = new Elysia().use(loggerMiddleware).ws("/:userId", {
 			return;
 		}
 
-		if (connectionMap.has(ws.data.params.userId)) {
+		if (connectionMap.has(ws.data.query.userId)) {
 			ws.send({
 				requestId: "0",
 				to: ReservedUserId.UNKNOWN,
 				event: "error",
 				data: {
 					name: "UserConflictError",
-					message: `user already connected: ${ws.data.params.userId}`,
+					message: `user already connected: ${ws.data.query.userId}`,
 					details: {
-						userId: ws.data.params.userId,
+						userId: ws.data.query.userId,
 					},
 				},
 			});
@@ -119,16 +119,16 @@ const app = new Elysia().use(loggerMiddleware).ws("/:userId", {
 			return;
 		}
 
-		connectionLogger.info(`connection opened: ${ws.data.params.userId}`);
-		connectionMap.set(ws.data.params.userId, ws as Connection);
+		connectionLogger.info(`connection opened: ${ws.data.query.userId}`);
+		connectionMap.set(ws.data.query.userId, ws as Connection);
 	},
 	close: async (ws) => {
-		connectionLogger.info(`connection closed: ${ws.data.params.userId}`);
-		connectionMap.delete(ws.data.params.userId);
+		connectionLogger.info(`connection closed: ${ws.data.query.userId}`);
+		connectionMap.delete(ws.data.query.userId);
 	},
 	message: async (ws, msg) => {
-		if (ws.data.params.userId !== msg.from) {
-			throw new UserIdMismatchError(ws.data.params.userId, msg.from);
+		if (ws.data.query.userId !== msg.from) {
+			throw new UserIdMismatchError(ws.data.query.userId, msg.from);
 		}
 
 		const handler = handlers[msg.event];
